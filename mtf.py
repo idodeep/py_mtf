@@ -28,14 +28,17 @@ class IMaGE(object):
         self.key = True if self.key % 2 == 0 else False
 
         if self.key % 2 == 0:
-            self.x = range(int(self.x0),int(self.x1))
-            self.cut(im, x0=self.x0, y0=self.y0, x1=self.x1, y1=self.y1)
-            self.ESF()
-            self.LSF()
-            self.MTF()
+            self.x = range(int(self.x0), int(self.x1))
+            self.calc(im, x0=self.x0, y0=self.y0, x1=self.x1, y1=self.y1)
 
         self.x0 = event.xdata
         self.y0 = event.ydata
+
+    def calc(self, image, **args):
+        self.cut(image, **args)
+        self.ESF()
+        self.LSF()
+        self.MTF()
 
     def on_motion(self, event):
         if self.key:
@@ -58,8 +61,9 @@ class IMaGE(object):
         plt.imshow(self.M_out)
         name = "box_selection_{}.png".format(self.count)
         imag = Image.fromarray(np.asarray(self.M_out), mode = "RGB")
-        imag.save("prueba.png")
+        imag.save(".\out\cut_img.png")
         plt.show()
+        plt.savefig("./out/operator_box_area.png")
 
     def ESF(self):
         """
@@ -79,6 +83,7 @@ class IMaGE(object):
         plt.title(r'ESF')
         plt.plot(x, self.edge_function, '-ob')
         plt.show()
+        plt.savefig("./out/ESF.png")
 
     def LSF(self):
         """
@@ -93,6 +98,7 @@ class IMaGE(object):
         plt.ylabel('intensidad')
         plt.plot(x,self.lsf, '-or')
         plt.show()
+        plt.savefig("./out/LSF.png")
 
     def MTF(self):
         """
@@ -114,6 +120,7 @@ class IMaGE(object):
         plt.legend([p, ll], ["MTF values", "polynomial fit"])
         plt.grid()
         plt.show()
+        plt.savefig("./out/MTF.png")
 
 if __name__ == "__main__":
     plt.figure()
