@@ -1,13 +1,12 @@
 import sys
 from pathlib import Path
 import matplotlib.pyplot as plt
-#from scipy import ndimage as nd
 from matplotlib.patches import Rectangle
 import numpy as np
 from PIL import *
 
 
-def luminance(img, out):
+def luminance(img, out, show):
     """
     Perceived luminance calculation
     """
@@ -18,14 +17,17 @@ def luminance(img, out):
     plt.title("operator box-area")
     plt.imshow(lum)
     imag = Image.fromarray(np.asarray(lum), mode="RGB")
-    plt.show()
     if out:
         imag.save(out + "/cut_img.png")
         plt.savefig(out + "/operator_box_area.png")
+    if show:
+        plt.show()
+    else:
+        plt.close()
     return lum
 
 
-def ESF(lum, out):
+def ESF(lum, out, show):
     """
     Edge Spread Function calculation
     """
@@ -41,13 +43,16 @@ def ESF(lum, out):
     plt.figure()
     plt.title(r'ESF')
     plt.plot(x, edge_function, '-ob')
-    plt.show()
     if out:
         plt.savefig(out + "/ESF.png")
+    if show:
+        plt.show()
+    else:
+        plt.close()
     return edge_function
 
 
-def LSF(esf, out):
+def LSF(esf, out, show):
     """
     Line Spread Function calculation
     """
@@ -59,13 +64,16 @@ def LSF(esf, out):
     plt.xlabel(r'pixel')
     plt.ylabel('intensidad')
     plt.plot(x, lsf, '-or')
-    plt.show()
     if out:
         plt.savefig(out + "/LSF.png")
+    if show:
+        plt.show()
+    else:
+        plt.close()
     return lsf
 
 
-def MTF(lsf, out):
+def MTF(lsf, out, show):
     """
     Modulation Transfer Function calculation
     """
@@ -84,19 +92,23 @@ def MTF(lsf, out):
     ll, = plt.plot(ix, poly(ix))
     plt.legend([p, ll], ["MTF values", "polynomial fit"])
     plt.grid()
-    plt.show()
     if out:
         plt.savefig(out + "/MTF.png")
+    if show:
+        plt.show()
+    else:
+        plt.close()
     return mtf
 
 
-def mtf_from_img(image, out):
-    Path(out).mkdir(parents=True, exist_ok=True)
-    lum = luminance(image, out)
-    esf = ESF(lum, out)
-    lsf = LSF(esf, out)
-    mtf = MTF(lsf, out)
-    print(mtf)
+def mtf_from_img(image, out, show):
+    if out:
+        Path(out).mkdir(parents=True, exist_ok=True)
+    lum = luminance(image, out, show)
+    esf = ESF(lum, out, show)
+    lsf = LSF(esf, out, show)
+    mtf = MTF(lsf, out, show)
+    return mtf
 
 
 class ImageAreaSelect(object):
@@ -154,20 +166,30 @@ class ImageAreaSelect(object):
             return
         print('crop(x,y):', self.x0, self.x1, self.y0, self.y1)
         img = self.img[self.y0:self.y1, self.x0:self.x1]
-        mtf_from_img(img, self.out + "/" + str(self.x0) + "_" + str(self.x1) + "_" + str(self.y0) + "_" + str(self.y1))
+        mtf_from_img(img, self.out + "/" + str(self.x0) + "_" + str(self.x1) + "_" + str(self.y0) + "_" + str(self.y1), True)
 
 
 if __name__ == "__main__":
-    print("Usage: mtf.py <image-file> <output-folder>")
-    # set defaults
+    if len(sys.argv) < 2:
+        print("Usage: mtf.py image-file [optional-crop list:]x0,x1,y0,y1")
+
+    # set args values or reset to defaults
     if len(sys.argv) > 1:
         im_file = sys.argv[1]
     else:
         im_file = "./images/prueba.png"
-    if len(sys.argv) > 2:
-        out_folder = sys.argv[2]
-    else:
-        out_folder = "./out"
-
     im = plt.imread(im_file)
-    ImageAreaSelect(im, out_folder, fit=True)
+    out_folder = "./out"
+
+    if len(sys.argv) > 2:
+        for i in range(len(sys.argv) - 2):
+            crop = list(map(int, sys.argv[2+i].split(',')))
+            x0 = int(crop[0])
+            x1 = int(crop[1])
+            y0 = int(crop[2])
+            y1 = int(crop[3])
+            img = im[y0:y1, x0:x1]
+            res = mtf_from_img(img, out_folder + "/" + str(x0) + "_" + str(x1) + "_" + str(y0) + "_" + str(y1), False)
+            print(str(list(res))[1:-1])
+    else:
+        ImageAreaSelect(im, out_folder, fit=True)
